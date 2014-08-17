@@ -117,7 +117,7 @@ std::vector<std::vector<Index2D>> guess(utils::Problem const & problem, BinFunc 
 */
 #ifdef NOT_SUPPORT_CONSTEXPR
 template <typename T, typename U>
-#elif
+#else
 template <typename T, typename U,
     PROCON_TEMPLATE_CONSTRAINTS(utils::is_image<T>() && utils::is_image<U>())>   // T, Uともに画像であるという制約
 #endif

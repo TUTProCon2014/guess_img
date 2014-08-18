@@ -11,7 +11,12 @@ int main()
         const utils::Problem& p = *p_opt;
 
         // 復元に使うための、2つの画像のくっつき度合いを返す関数
-        guess::DiffConnection pred;
+        auto pred = [&](utils::ElementImage const & img1,
+                        utils::ElementImage const & img2,
+                        utils::Direction dir)
+        {
+            return guess::diff_connection(img1, img2, dir);
+        };
 
         // 復元
         auto idxs = guess::guess(p, pred);
@@ -47,7 +52,7 @@ int main()
             }
         }
 
-        cv::namedWindow("image1", cv::WINDOW_AUTOSIZE|cv::WINDOW_FREERATIO);
+        cv::namedWindow("image1", cv::WINDOW_AUTOSIZE);
         
         // // ウィンドウ名でウィンドウを指定して，そこに画像を描画
         cv::imshow("image1", dst);

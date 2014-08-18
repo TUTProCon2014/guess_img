@@ -11,6 +11,9 @@
 #include <deque>
 
 namespace procon { namespace guess {
+
+using namespace utils;
+
 /**
 Predicate fは、f(image1, image2, Direction::up) -> double を返す
 doubleの`絶対値の値が小さい方`を優先します。
@@ -30,25 +33,28 @@ auto idxRC = guess(problem, [](utils::ElementImage const & p1,
 ------------
 */
 template <typename BinFunc>
-std::vector<std::vector<utils::Index2D>> guess(utils::Problem const & problem, BinFunc f)
+std::vector<std::vector<Index2D>> guess(utils::Problem const & problem, BinFunc f)
 {
     auto remain = [&](){
-        std::set<utils::Index2D> dst;
+        std::set<Index2D> dst;
         for(auto r : utils::iota(problem.div_y()))
-            for(auto c : utils::iota(problem.div_x()))
-                dst.insert({r, c});
+            for(auto c : utils::iota(problem.div_x())){
+                dst.insert(makeIndex2D(r, c));
+            }
 
-        dst.erase({0, 0});  // (0, 0)は原点として最初から使う
+        Index2D idx; idx[0] = 0; idx[1] = 0;
+        dst.erase(idx);  // (0, 0)は原点として最初から使う
         return dst;
     }();
 
 
     // 画像(r, c) = originを中心にして、縦方向か横方向に画像を結合していく
-    auto guess_oneline = [&](utils::Index2D origin, bool isVerticalLine){
-        std::deque<utils::Index2D> dst = {origin}; // 最初に原点がある
+    auto guess_oneline = [&](Index2D origin, bool isVerticalLine){
+        std::deque<Index2D> dst;
+        dst.push_back(origin);      // 最初に原点がある
         for(auto t : utils::iota(isVerticalLine ? problem.div_y()-1 : problem.div_x()-1)){
             utils::Direction dir;
-            utils::Index2D mIdx;
+            Index2D mIdx;
             double min = std::numeric_limits<double>::infinity();
 
             // std::array<std::size_t, 2> ds = {0, dst.size()-1};    // {0 : 上(左), dst.size()-1 : 下(右)}
@@ -80,7 +86,7 @@ std::vector<std::vector<utils::Index2D>> guess(utils::Problem const & problem, B
             remain.erase(mIdx);         // 決定したので消す
         }
 
-        std::vector<utils::Index2D> vec(dst.begin(), dst.end());
+        std::vector<Index2D> vec(dst.begin(), dst.end());
         return vec;
     };
 
@@ -96,8 +102,8 @@ std::vector<std::vector<utils::Index2D>> guess(utils::Problem const & problem, B
     //    ← (R1, C1) →       => (R3, C3), (R1, C1), (R4, C4)
     //
     //
-    std::vector<std::vector<utils::Index2D>> dst;
-    for(auto& o : guess_oneline({0, 0}, true))
+    std::vector<std::vector<Index2D>> dst;
+    for(auto& o : guess_oneline(makeIndex2D(0, 0), true))
         dst.push_back(guess_oneline(o, false));
 
     return dst;
@@ -109,8 +115,12 @@ std::vector<std::vector<utils::Index2D>> guess(utils::Problem const & problem, B
 相関があるほど返す値は絶対値が小さくなります。
 また、返す値は必ず正です。
 */
+#ifdef NOT_SUPPORT_CONSTEXPR
+template <typename T, typename U>
+#else
 template <typename T, typename U,
     PROCON_TEMPLATE_CONSTRAINTS(utils::is_image<T>() && utils::is_image<U>())>   // T, Uともに画像であるという制約
+#endif
 double diff_connection(T const & img1, U const & img2, utils::Direction direction)
 {
     double sum = 0;
@@ -171,6 +181,6 @@ double diff_connection(T const & img1, U const & img2, utils::Direction directio
 }
 
 
-PROCON_DEF_STRUCT_FUNCTION(DiffConnection, diff_connection);
+// PROCON_DEF_STRUCT_FUNCTION(DiffConnection, diff_connection);
 
 }} // namespace procon::guess

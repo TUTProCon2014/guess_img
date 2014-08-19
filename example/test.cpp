@@ -11,8 +11,8 @@ int main()
         const utils::Problem& p = *p_opt;
 
         // 復元に使うための、2つの画像のくっつき度合いを返す関数
-        auto pred = [&](utils::ElementImage const & img1,
-                        utils::ElementImage const & img2,
+        auto pred = [&](utils::ElementImage<const utils::Image> const & img1,
+                        utils::ElementImage<const utils::Image> const & img2,
                         utils::Direction dir)
         {
             return guess::diff_connection(img1, img2, dir);
@@ -28,24 +28,15 @@ int main()
             std::cout << std::endl;
         }
 
-        auto& src_img = p.cvMat();
-        cv::Mat dst = src_img.clone();
+        auto dst = p.clone();
 
         // 画像を復元してみる
         {
             size_t r = 0;
             for(auto ee: idxs){
                 size_t c = 0;
-                for(auto e: ee)
-                {
-                    auto elem = p.get_element(e[0], e[1]);
-                    auto hh = p.height() / p.div_y();
-                    auto ww = p.width() / p.div_x();
-
-                    for(auto rr: utils::iota(hh))
-                        for(auto cc: utils::iota(ww))
-                            dst.at<cv::Vec3b>(r * hh + rr, c * ww + cc)
-                                = elem.get_pixel(rr, cc).vec();
+                for(auto e: ee){
+                    p.get_element(e[0], e[1]).cvMat().copyTo(dst.get_element(r, c).cvMat());
                     ++c;
                 }
                 ++r;
@@ -55,7 +46,7 @@ int main()
         cv::namedWindow("image1", cv::WINDOW_AUTOSIZE);
         
         // // ウィンドウ名でウィンドウを指定して，そこに画像を描画
-        cv::imshow("image1", dst);
+        cv::imshow("image1", dst.cvMat());
         // // キー入力を（無限に）待つ
         cv::waitKey(0);
     }else

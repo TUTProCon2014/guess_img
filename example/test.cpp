@@ -51,4 +51,6 @@ int main()
         cv::waitKey(0);
     }else
         std::cout << "死" << std::endl;
+
+    return 0;
 }

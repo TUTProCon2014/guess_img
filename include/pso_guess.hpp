@@ -259,5 +259,4 @@ std::vector<std::vector<Index2D>> pso_guess(utils::Problem const & problem, BinF
 	return dst;
 }
 
-
 }}

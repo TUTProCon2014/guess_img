@@ -11,8 +11,8 @@ int main()
         const utils::Problem& p = *p_opt;
 
         // 復元に使うための、2つの画像のくっつき度合いを返す関数
-        auto pred = [&](utils::ElementImage<const utils::Image> const & img1,
-                        utils::ElementImage<const utils::Image> const & img2,
+        auto pred = [&](utils::Image const & img1,
+                        utils::Image const & img2,
                         utils::Direction dir)
         {
             return guess::diff_connection(img1, img2, dir);

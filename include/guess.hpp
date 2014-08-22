@@ -115,12 +115,11 @@ std::vector<std::vector<Index2D>> guess(utils::Problem const & problem, BinFunc 
 相関があるほど返す値は絶対値が小さくなります。
 また、返す値は必ず正です。
 */
-#ifdef NOT_SUPPORT_CONSTEXPR
-template <typename T, typename U>
-#else
-template <typename T, typename U,
-    PROCON_TEMPLATE_CONSTRAINTS(utils::is_image<T>() && utils::is_image<U>())>   // T, Uともに画像であるという制約
+template <typename T, typename U
+#ifdef SUPPORT_TEMPLATE_CONSTRAINTS
+    , PROCON_TEMPLATE_CONSTRAINTS(utils::is_image<T>() && utils::is_image<U>())    // T, Uともに画像であるという制約
 #endif
+>
 double diff_connection(T const & img1, U const & img2, utils::Direction direction)
 {
     double sum = 0;

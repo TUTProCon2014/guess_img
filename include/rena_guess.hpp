@@ -130,7 +130,7 @@ std::vector<std::vector<Index2D>> rena_guess(utils::Problem const & problem, Bin
     [&](std::set<Index2D> & remain, std::deque<Index2D> & dst, utils::Direction dir,
         std::size_t maxN, double *pIncPV)
     {
-		utils::enforce(dst.size() > 0, "結合素材の画像がありません")
+		utils::enforce(dst.size() > 0, "結合素材の画像がありません");
 
         double incPV = 0;
         while(!remain.empty() && dst.size() < maxN){

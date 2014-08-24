@@ -101,7 +101,7 @@ class Particle{
 			for(int i=0; i < _dim; i++){
 				double temp;
 				temp = _x[i] * (_dim-i)*1.0/_dim; //重複除去
-				if(temp >= _dim - i) temp = _dim - i - 1; //_x[i] = _dimのときのエラーを防ぐ
+				if(temp >= _dim - i) temp = _dim - i - 1; //_x[i] = _dim - iのときのエラーを防ぐ
 				_dis_x[i] = (size_t)floor(temp); //離散化
 			}
 		}

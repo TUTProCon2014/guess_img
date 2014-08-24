@@ -1,12 +1,19 @@
 #include "../include/guess.hpp"
+#include "../include/pso_guess.hpp"
 #include "../../inout/include/inout.hpp"
 #include "../../utils/include/types.hpp"
+
+#define GUESS guess::guess
 
 using namespace procon;
 
 int main()
 {
-    auto p_opt =  inout::get_problem_from_test_server(8);
+    auto p_opt = utils::Problem::get("img8.ppm");
+
+    if(!p_opt)
+        p_opt =  inout::get_problem_from_test_server(8);
+
     if(p_opt){
         const utils::Problem& p = *p_opt;
 
@@ -19,7 +26,7 @@ int main()
         };
 
         // 復元
-        auto idxs = guess::guess(p, pred);
+        auto idxs = GUESS(p, pred);
 
         // 復元できたインデックスを表示してみる
         for(auto& ee: idxs){

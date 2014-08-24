@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <vector>
 #include <iostream>
+#include <cstdio>
 #include <memory>
 #include <cmath>
 #include <sys/time.h>
@@ -32,6 +33,7 @@ template <typename BinFunc>
 class Particle{
 	private:
 		std::vector<double> _x;		//位置ベクトル
+		std::vector<size_t> _dis_x;	//重複除去と離散化した位置ベクトル
 		std::vector<double> _v;		//速度ベクトル
 		std::vector<double> _pbest; //personal best
 		double _pvalue;				//個人の最高評価値
@@ -50,8 +52,9 @@ class Particle{
 				//0から断片数までの範囲の値を生成
 				double temp = ((double)rand() / ((double)RAND_MAX + 1)) * _dim;
 				_x.push_back(temp);
+				_dis_x.push_back(0);
 				//-断片数から断片数までの範囲の値を速度とする
-				_v.push_back(((double)rand() / ((double)RAND_MAX + 1)) * 2.0 * _dim - _dim);
+				_v.push_back(((double)rand() / ((double)RAND_MAX + 1)) * 1.0 * _dim - _dim/2.0);
 			}
 
 			this->format();	//PSOの解を今回の問題の解に変換
@@ -96,9 +99,10 @@ class Particle{
 		//こうすることで重複をなくせる
 		void format(){
 			for(int i=0; i < _dim; i++){
-				_x[i] = _x[i] * (_dim-i)*1.0/_dim; //重複除去
-				if(_x[i] >= _dim) _x[i] = _dim-1; //_x[i] = _dimのときのエラーを防ぐ
-				_x[i] = floor(_x[i]); //離散化
+				double temp;
+				temp = _x[i] * (_dim-i)*1.0/_dim; //重複除去
+				if(temp >= _dim - i) temp = _dim - i - 1; //_x[i] = _dimのときのエラーを防ぐ
+				_dis_x[i] = (size_t)floor(temp); //離散化
 			}
 		}
 
@@ -114,9 +118,9 @@ class Particle{
 
 			//index配列の生成
 			for(int i=0; i < _dim; i++){
-				int select = remain[_x[i]]; //要素の選択
+				int select = remain[_dis_x[i]]; //要素の選択
 
-				remain.erase(remove(remain.begin(), remain.end(), remain[_x[i]]), remain.end()); //選ばれた要素の削除
+				remain.erase(remove(remain.begin(), remain.end(), remain[_dis_x[i]]), remain.end()); //選ばれた要素の削除
 
 				Index2D idx;
 				idx[1] = (size_t)select % _problem.div_x();		//x
@@ -224,7 +228,7 @@ std::vector<std::vector<Index2D>> pso_guess(utils::Problem const & problem, BinF
 	for(int i=1; i < p_num; i++){
 		if(gvalue > p[i].pvalue()){
 			gvalue = p[i].pvalue();
-			gbest = p[i].x();
+			gbest = p[i].pbest();
 			dst = p[i].make_indexv();
 		}
 	}
@@ -247,7 +251,7 @@ std::vector<std::vector<Index2D>> pso_guess(utils::Problem const & problem, BinF
 		for(int j=0; j < p_num; j++){
 			if(gvalue > p[j].pvalue()){
 				gvalue = p[j].pvalue();
-				gbest = p[j].x();
+				gbest = p[j].pbest();
 				dst = p[j].make_indexv();
 			}
 		}

@@ -9,7 +9,11 @@ using namespace procon;
 
 int main()
 {
-    auto p_opt =  inout::get_problem_from_test_server(8);
+    auto p_opt = utils::Problem::get("img8.ppm");
+
+    if(!p_opt)
+        p_opt =  inout::get_problem_from_test_server(8);
+
     if(p_opt){
         const utils::Problem& p = *p_opt;
 

@@ -16,14 +16,13 @@
 
 #pragma once
 
-#include <cstdlib>
+#include <algorithm>
 #include <vector>
 #include <iostream>
-#include <cstdio>
 #include <memory>
 #include <cmath>
-#include <sys/time.h>
 #include <limits>
+#include <random>
 
 namespace procon{ namespace pso_guess {
 
@@ -32,29 +31,33 @@ using namespace utils;
 template <typename BinFunc>
 class Particle{
 	private:
-		std::vector<double> _x;		//位置ベクトル
-		std::vector<size_t> _dis_x;	//重複除去と離散化した位置ベクトル
-		std::vector<double> _v;		//速度ベクトル
-		std::vector<double> _pbest; //personal best
-		double _pvalue;				//個人の最高評価値
-		int _dim;					//問題の次元
-		BinFunc _f;					//評価関数
-		const Problem _problem;		//問題情報
-		const double _c1 = 2.0;		//移動係数(pbestへの近づきやすさ)
-		const double _c2 = 2.0;		//移動係数(gbestへの近づきやすさ)
+		std::vector<double> _x;							//位置ベクトル
+		std::vector<size_t> _dis_x;						//重複除去と離散化した位置ベクトル
+		std::vector<double> _v;							//速度ベクトル
+		std::vector<double> _pbest;						//personal best
+		double _pvalue;									//個人の最高評価値
+		int _dim;										//問題の次元
+		BinFunc _f;										//評価関数
+		const Problem _problem;							//問題情報
+		std::mt19937 _rnd;								//擬似乱数生成器
+		std::uniform_real_distribution<double> _dist;	//一様分布生成器
+		const double _c1 = 2.0;							//移動係数(pbestへの近づきやすさ)
+		const double _c2 = 2.0;							//移動係数(gbestへの近づきやすさ)
 
 	public:
 		//粒子のランダム生成を行うコンストラクタ
-		Particle(BinFunc f, Problem pro) : _f(f), _problem(pro){
+		Particle(BinFunc f, Problem pro)
+			: _f(f), _problem(pro), _rnd(std::random_device()()), _dist(0.0, 1.0)
+		{
 			_dim = _problem.div_x() * _problem.div_y();	//次元の計算
 
 			for(int i=0; i < _dim; i++){
 				//0から断片数までの範囲の値を生成
-				double temp = ((double)rand() / ((double)RAND_MAX + 1)) * _dim;
+				double temp = _dist(_rnd) * _dim;
 				_x.push_back(temp);
 				_dis_x.push_back(0);
 				//-断片数から断片数までの範囲の値を速度とする
-				_v.push_back(((double)rand() / ((double)RAND_MAX + 1)) * 1.0 * _dim - _dim/2.0);
+				_v.push_back(_dist(_rnd) * 1.0 * _dim - _dim/2.0);
 			}
 
 			this->format();	//PSOの解を今回の問題の解に変換
@@ -120,7 +123,7 @@ class Particle{
 			for(int i=0; i < _dim; i++){
 				int select = remain[_dis_x[i]]; //要素の選択
 
-				remain.erase(remove(remain.begin(), remain.end(), remain[_dis_x[i]]), remain.end()); //選ばれた要素の削除
+				remain.erase(std::remove(remain.begin(), remain.end(), remain[_dis_x[i]]), remain.end()); //選ばれた要素の削除
 
 				Index2D idx;
 				idx[1] = (size_t)select % _problem.div_x();		//x
@@ -170,12 +173,12 @@ class Particle{
 			//乱数項の生成
 			std::vector<double> escape; 
 			for(int j=0; j<_dim; j++){
-				escape.push_back(-_dim + ((double)rand()/((double)RAND_MAX + 1)) * 2.0 * _dim);
+				escape.push_back(-_dim + _dist(_rnd) * 2.0 * _dim);
 			}
 
 			for(int i=0; i < _dim; i++){
 				//粒子の速度の更新
-				_v[i] = w * _v[i] + _c1 * (rand()/((double)RAND_MAX + 1)) * (_pbest[i] - _x[i]) + _c2 * ((rand())/((double)RAND_MAX + 1)) * (gbest[i] - _x[i]) + 0.01 * escape[i];
+				_v[i] = w * _v[i] + _c1 * _dist(_rnd) * (_pbest[i] - _x[i]) + _c2 * _dist(_rnd) * (gbest[i] - _x[i]) + 0.01 * escape[i];
 				//粒子の速度が限界を超えるのを防ぐ
 				if(_v[i] >= _dim/2.0) _v[i] = _dim/2.0;
 				else if(_v[i] <= -_dim/2.0) _v[i] = -_dim/2.0;
@@ -208,11 +211,6 @@ std::vector<std::vector<Index2D>> pso_guess(utils::Problem const & problem, BinF
 	double gvalue;				//global best(最終的な解)
 	std::vector<double> gbest;	//粒子みんなの最高評価値
 	std::vector<std::vector<Index2D>> dst; //答えとなるインデックス2次元配列
-
-	//乱数のシードの設定
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	srand((unsigned int)tv.tv_sec * ((unsigned int)tv.tv_usec + 1));
 
 	//粒子の生成
 	std::vector<Particle<BinFunc>> p;

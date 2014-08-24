@@ -1,6 +1,9 @@
 #include "../include/guess.hpp"
+#include "../include/pso_guess.hpp"
 #include "../../inout/include/inout.hpp"
 #include "../../utils/include/types.hpp"
+
+#define GUESS guess::guess
 
 using namespace procon;
 
@@ -19,7 +22,7 @@ int main()
         };
 
         // 復元
-        auto idxs = guess::guess(p, pred);
+        auto idxs = GUESS(p, pred);
 
         // 復元できたインデックスを表示してみる
         for(auto& ee: idxs){

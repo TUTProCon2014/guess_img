@@ -1,9 +1,12 @@
 #include "../include/guess.hpp"
 #include "../include/pso_guess.hpp"
+#include "../include/rena_guess.hpp"
 #include "../../inout/include/inout.hpp"
 #include "../../utils/include/types.hpp"
 
-#define GUESS guess::guess
+#define GUESS_NAMESPACE guess
+#define GUESS_FUNC guess
+#define GUESS_PRED diff_connection
 
 using namespace procon;
 
@@ -22,11 +25,11 @@ int main()
                         utils::Image const & img2,
                         utils::Direction dir)
         {
-            return guess::diff_connection(img1, img2, dir);
+            return GUESS_NAMESPACE::GUESS_PRED(img1, img2, dir);
         };
 
         // 復元
-        auto idxs = GUESS(p, pred);
+        auto idxs = GUESS_NAMESPACE::GUESS_FUNC(p, pred);
 
         // 復元できたインデックスを表示してみる
         for(auto& ee: idxs){

@@ -18,6 +18,12 @@ namespace procon { namespace bfs_guess {
 using namespace utils;
 
 
+inline Index2D convToIndex2D(std::size_t i, std::size_t w)
+{
+    return makeIndex2D(i / w, i % w);
+}
+
+
 /**
 T型のもつvalue()を評価し、その平均値と標準偏差を計算し、predの評価結果がtrueな要素をdstに入れます
 その際、srcは破壊します。
@@ -59,11 +65,14 @@ void bfs_guess_impl(std::deque<State>& state)
             refine(std::move(dst1), dst2, [](double v, double m, double sd){ return v <= m + sd; });
             dst1 = [](){ std::deque<State> ini; return ini; }();
 
-            std::sort(dst2.begin(), dst2.end(), [](State & a, State & b){ return a.value() < b.value(); });
-            while(!dst2.empty() && dst1.size() < 128){
-                if(dst1.empty() || dst1[dst1.size()-1] != dst2[0])
-                    dst1.push_back(std::move(dst2[0]));
-                dst2.pop_front();
+            std::set<State> rbtree;
+            for(auto& e: dst2)
+                rbtree.insert(std::move(e));
+
+            for(auto& e: rbtree){
+                dst1.push_back(std::move(e));
+                if(dst1.size() >= 128)
+                    break;
             }
         }
 
@@ -76,7 +85,7 @@ void bfs_guess_impl(std::deque<State>& state)
 template <typename BinFunc>
 struct State1st
 {
-    State1st(utils::Problem const *pb, BinFunc *func, std::deque<Index2D> const & idx, std::set<Index2D> const & rem, double ev)
+    State1st(utils::Problem const *pb, BinFunc *func, std::deque<Index2D> const & idx, std::vector<bool> const & rem, double ev)
     : _pb(pb), _pred(func), _idx(idx), _remain(rem), _ev(ev) {}
 
 
@@ -93,15 +102,11 @@ struct State1st
 
 
     bool operator==(State1st<BinFunc> const & rhs) const
-    {
-        return utils::equal(index(), rhs.index());
-    }
-
-
+    { return utils::equal(index(), rhs.index()); }
     bool operator!=(State1st<BinFunc> const & rhs) const
-    {
-        return !(*(this) == rhs);
-    }
+    { return !(*(this) == rhs); }
+    bool operator<(State1st<BinFunc> const & rhs) const
+    { return this->value() < rhs.value(); }
 
 
     bool isEnd() const { return _idx.size() == _pb->div_y(); }
@@ -109,14 +114,18 @@ struct State1st
 
     void update(std::deque<State1st> & q)
     {
-        for(auto& e: _remain){
-            State1st<BinFunc> dupTop = *this;
-            dupTop.insert(Direction::up, e);
-            q.push_back(std::move(dupTop));
+        std::size_t i = 0;
+        for(bool e: _remain){
+            if(e){
+                State1st<BinFunc> dupTop = *this;
+                dupTop.insert(Direction::up, i);
+                q.push_back(std::move(dupTop));
 
-            State1st<BinFunc> dupBottom = *this;
-            dupBottom.insert(Direction::down, e);
-            q.push_back(std::move(dupBottom));
+                State1st<BinFunc> dupBottom = *this;
+                dupBottom.insert(Direction::down, i);
+                q.push_back(std::move(dupBottom));
+            }
+            ++i;
         }
     }
 
@@ -124,7 +133,7 @@ struct State1st
     Problem const *_pb;
     BinFunc *_pred;
     std::deque<Index2D> _idx;
-    std::set<Index2D> _remain;
+    std::vector<bool> _remain;
     double _ev;
 
 
@@ -142,15 +151,18 @@ struct State1st
     }
 
 
-    void insert(Direction dir, Index2D const & index)
+    void insert(Direction dir, std::size_t i)
     {
+        const Index2D index = convToIndex2D(i, _pb->div_x());
+
         _ev += pred_value(dir, index);
 
         if(dir == Direction::up)
             _idx.push_front(index);
         else
             _idx.push_back(index);
-        _remain.erase(index);
+
+        _remain[i] = false;
     }
 };
 
@@ -176,20 +188,27 @@ struct State2nd
         return !(*this == rhs);
     }
 
+    bool operator<(State2nd<BinFunc> const & rhs) const
+    { return this->value() < rhs.value(); }
+
 
     bool isEnd() const { return _idx.size() == _1st._pb->div_x(); }
 
 
     void update(std::deque<State2nd>& dst)
     {
-        for(auto& e: _1st._remain){
-            auto dupLeft = *this;
-            dupLeft.insert(Direction::left, e);
-            dst.push_back(std::move(dupLeft));
+        std::size_t i = 0;
+        for(bool e: _1st._remain){
+            if(e){
+                auto dupLeft = *this;
+                dupLeft.insert(Direction::left, i);
+                dst.push_back(std::move(dupLeft));
 
-            auto dupRight = *this;
-            dupRight.insert(Direction::right, e);
-            dst.push_back(std::move(dupRight));
+                auto dupRight = *this;
+                dupRight.insert(Direction::right, i);
+                dst.push_back(std::move(dupRight));
+            }
+            ++i;
         }
     }
 
@@ -226,8 +245,10 @@ struct State2nd
     }
 
 
-    void insert(Direction dir, Index2D const & index)
+    void insert(Direction dir, std::size_t i)
     {
+        const Index2D index = convToIndex2D(i, _1st._pb->div_x());
+
         _1st._ev += pred_value(dir, index);
 
         if(dir == Direction::left){
@@ -237,7 +258,7 @@ struct State2nd
         else
             _idx.push_back(index);
 
-        _1st._remain.erase(index);
+        _1st._remain[i] = false;
     }
 };
 
@@ -276,16 +297,23 @@ struct State3rd
         return !(*this == rhs);
     }
 
+    bool operator<(State3rd<BinFunc> const & rhs) const
+    { return this->value() < rhs.value(); }
+
 
     std::vector<std::deque<Index2D>> const & index() const { return _idx; }
 
 
     void update(std::deque<State3rd<BinFunc>>& dst)
     {
-        for(auto& e: _1st._remain){
-            State3rd<BinFunc> dup = *this;
-            dup.insert(e);
-            dst.push_back(std::move(dup));
+        std::size_t i = 0;
+        for(bool e: _1st._remain){
+            if(e){
+                State3rd<BinFunc> dup = *this;
+                dup.insert(i);
+                dst.push_back(std::move(dup));
+            }
+            ++i;
         }
     }
 
@@ -301,7 +329,9 @@ struct State3rd
     std::size_t _ctIdx;
 
 
-    void insert(Index2D const & index){
+    void insert(std::size_t i){
+        const Index2D index = convToIndex2D(i, _1st._pb->div_x());
+
         auto pos = nowPos();
         Index2D tIh, tIv;
 
@@ -317,7 +347,7 @@ struct State3rd
             _idx[pos[0]].push_front(index);
         }
 
-        _1st._remain.erase(index);
+        _1st._remain[i] = false;
 
         _1st._ev += std::abs((*_1st._pred)(_1st._pb->get_element(tIh[0], tIh[1]),
                                   _1st._pb->get_element(index[0], index[1]),
@@ -349,16 +379,13 @@ template <typename BinFunc>
 std::vector<std::vector<Index2D>> bfs_guess(utils::Problem const & pb, BinFunc f)
 {
     // stage1
-    std::set<Index2D> rem;
-    for(auto i: utils::iota(pb.div_y()))
-        for(auto j: utils::iota(pb.div_x()))
-            rem.insert(makeIndex2D(i, j));
+    std::vector<bool> rem(pb.div_y() * pb.div_x(), true);
 
     std::deque<State1st<BinFunc>> state1;
-    for(auto& e: rem){
+    for(auto i: utils::iota(rem.size())){
         auto remdup = rem;
-        remdup.erase(e);
-        state1.emplace_back(&pb, &f, std::deque<Index2D>({ e }), remdup, 0.0);
+        remdup[i] = false;
+        state1.emplace_back(&pb, &f, std::deque<Index2D>({ convToIndex2D(i, pb.div_x()) }), remdup, 0.0);
     }
 
     writeln(std::cout, "Stage1");

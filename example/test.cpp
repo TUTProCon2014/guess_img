@@ -1,21 +1,22 @@
 #include "../include/guess.hpp"
 #include "../include/pso_guess.hpp"
 #include "../include/rena_guess.hpp"
+#include "../include/bfs_guess.hpp"
 #include "../../inout/include/inout.hpp"
 #include "../../utils/include/types.hpp"
+#include "../../utils/include/dwrite.hpp"
 
-#define GUESS_NAMESPACE guess
-#define GUESS_FUNC guess
-#define GUESS_PRED diff_connection
+#define GUESS_FUNC bfs_guess::bfs_guess
+#define GUESS_PRED bfs_guess::diff_connection
 
 using namespace procon;
 
 int main()
 {
-    auto p_opt = utils::Problem::get("img8.ppm");
+    auto p_opt = utils::Problem::get("img9.ppm");
 
     if(!p_opt)
-        p_opt =  inout::get_problem_from_test_server(8);
+        p_opt = inout::get_problem_from_test_server(9);
 
     if(p_opt){
         const utils::Problem& p = *p_opt;
@@ -25,11 +26,11 @@ int main()
                         utils::Image const & img2,
                         utils::Direction dir)
         {
-            return GUESS_NAMESPACE::GUESS_PRED(img1, img2, dir);
+            return GUESS_PRED(img1, img2, dir);
         };
 
         // 復元
-        auto idxs = GUESS_NAMESPACE::GUESS_FUNC(p, pred);
+        auto idxs = GUESS_FUNC(p, pred);
 
         // 復元できたインデックスを表示してみる
         for(auto& ee: idxs){

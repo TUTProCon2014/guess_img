@@ -472,13 +472,13 @@ std::vector<std::vector<Index2D>> bfs_guess_parallel(utils::Problem const & pb, 
         std::deque<State3rd<BinFunc>> qq;
         for (auto& e : q){
             if (e.isEnd())
-            qq.emplace_back(std::move(e));
+                qq.emplace_back(std::move(e));
         }
 
         state3.emplace_back(std::move(qq));
     }
 
-	utils::writeln(std::cout, "Stage3");
+    utils::writeln(std::cout, "Stage3");
     parallel_guess_impl(state3);
 
 

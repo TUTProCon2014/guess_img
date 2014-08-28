@@ -434,7 +434,7 @@ std::vector<std::vector<Index2D>> bfs_guess_parallel(utils::Problem const & pb, 
         std::size_t cnt = 0;
         for (auto& e : ths){
             e.join();
-            writeln(std::cout, "end: ", ++cnt);
+            utils::writeln(std::cout, "end: ", ++cnt);
         }
     };
 
@@ -450,7 +450,7 @@ std::vector<std::vector<Index2D>> bfs_guess_parallel(utils::Problem const & pb, 
     }
 
 
-    writeln(std::cout, "Stage1");
+    utils::writeln(std::cout, "Stage1");
     parallel_guess_impl(state1);
 
     // stage2
@@ -463,7 +463,7 @@ std::vector<std::vector<Index2D>> bfs_guess_parallel(utils::Problem const & pb, 
         state2.emplace_back(std::move(qq));
     }
 
-    writeln(std::cout, "Stage2");
+    utils::writeln(std::cout, "Stage2");
     parallel_guess_impl(state2);
 
     // stage3
@@ -478,7 +478,7 @@ std::vector<std::vector<Index2D>> bfs_guess_parallel(utils::Problem const & pb, 
         state3.emplace_back(std::move(qq));
     }
 
-    writeln(std::cout, "Stage3");
+	utils::writeln(std::cout, "Stage3");
     parallel_guess_impl(state3);
 
 

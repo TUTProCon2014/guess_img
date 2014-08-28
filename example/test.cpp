@@ -6,17 +6,17 @@
 #include "../../utils/include/types.hpp"
 #include "../../utils/include/dwrite.hpp"
 
-#define GUESS_FUNC bfs_guess::bfs_guess
+#define GUESS_FUNC bfs_guess::bfs_guess_parallel
 #define GUESS_PRED bfs_guess::diff_connection
 
 using namespace procon;
 
 int main()
 {
-    auto p_opt = utils::Problem::get("img9.ppm");
+    auto p_opt = utils::Problem::get("img5.ppm");
 
     if(!p_opt)
-        p_opt = inout::get_problem_from_test_server(9);
+        p_opt = inout::get_problem_from_test_server(5);
 
     if(p_opt){
         const utils::Problem& p = *p_opt;

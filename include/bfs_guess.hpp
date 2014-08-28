@@ -12,6 +12,7 @@
 #include <deque>
 #include <deque>
 #include <tuple>
+#include <thread>
 
 namespace procon { namespace bfs_guess {
 
@@ -51,12 +52,10 @@ void refine(std::deque<T>&& src, std::deque<T>& dst, Pred pred)
 
 
 template <typename State>
-void bfs_guess_impl(std::deque<State>& state)
+void bfs_guess_impl(std::deque<State>& state, std::size_t maxSize)
 {
     std::size_t iterCount = 0;
     while(!state.empty() && !state[0].isEnd()){
-        writeln(std::cout, "iteration: ", iterCount++);
-
         std::deque<State> dst1;
         for(auto& e: state){
             e.update(dst1);
@@ -71,7 +70,7 @@ void bfs_guess_impl(std::deque<State>& state)
 
             for(auto& e: rbtree){
                 dst1.push_back(std::move(e));
-                if(dst1.size() >= 128)
+                if(dst1.size() >= maxSize)
                     break;
             }
         }
@@ -389,7 +388,7 @@ std::vector<std::vector<Index2D>> bfs_guess(utils::Problem const & pb, BinFunc f
     }
 
     writeln(std::cout, "Stage1");
-    bfs_guess_impl(state1);
+    bfs_guess_impl(state1, 128);
 
     // stage2
     std::deque<State2nd<BinFunc>> state2;
@@ -397,7 +396,7 @@ std::vector<std::vector<Index2D>> bfs_guess(utils::Problem const & pb, BinFunc f
         state2.emplace_back(std::move(e));
 
     writeln(std::cout, "Stage2");
-    bfs_guess_impl(state2);
+    bfs_guess_impl(state2, 128);
 
     // stage3
     std::deque<State3rd<BinFunc>> state3;
@@ -405,12 +404,96 @@ std::vector<std::vector<Index2D>> bfs_guess(utils::Problem const & pb, BinFunc f
         state3.emplace_back(std::move(e));
 
     writeln(std::cout, "Stage3");
-    bfs_guess_impl(state3);
+    bfs_guess_impl(state3, 128);
 
     if(state3.empty())
         return guess::guess(pb, f);
     else{
         auto mat = state3[0].index();
+        std::vector<std::vector<Index2D>> dst;
+        for(auto& v: mat)
+            dst.emplace_back(v.begin(), v.end());
+
+        return dst;
+    }
+}
+
+
+template <typename BinFunc>
+std::vector<std::vector<Index2D>> bfs_guess_parallel(utils::Problem const & pb, BinFunc f)
+{
+    const std::size_t allTileN = pb.div_y() * pb.div_x();
+    const std::size_t threadN = static_cast<std::size_t>(std::floor(allTileN / (allTileN >= 64 ? std::sqrt(pb.div_y()) : 1) / (allTileN >= 144 ? std::sqrt(pb.div_y()) : 1)));
+
+    // マルチスレッドで`bfs_guess_impl`を呼ぶ
+    auto parallel_guess_impl = [&pb](auto& states){
+        std::vector<std::thread> ths;
+        for(auto& e: states)
+            ths.emplace_back([&](){ bfs_guess_impl(e, 4096 / pb.div_x() / pb.div_y()); });
+
+        std::size_t cnt = 0;
+        for (auto& e : ths){
+            e.join();
+            writeln(std::cout, "end: ", ++cnt);
+        }
+    };
+
+
+    std::vector<bool> rem(pb.div_x() * pb.div_y(), true);
+
+    // stage1
+    std::vector<std::deque<State1st<BinFunc>>> state1(threadN);
+    for(auto i: utils::iota(state1.size())){
+        auto remdup = rem;
+        remdup[i] = false;
+        state1[i].emplace_back(&pb, &f, std::deque<Index2D>({ convToIndex2D(i, pb.div_x()) }), remdup, 0.0);
+    }
+
+
+    writeln(std::cout, "Stage1");
+    parallel_guess_impl(state1);
+
+    // stage2
+    std::vector<std::deque<State2nd<BinFunc>>> state2; state2.reserve(state1.size());
+    for(auto& q: state1){
+        std::deque<State2nd<BinFunc>> qq;
+        for(auto& e: q)
+            qq.emplace_back(std::move(e));
+
+        state2.emplace_back(std::move(qq));
+    }
+
+    writeln(std::cout, "Stage2");
+    parallel_guess_impl(state2);
+
+    // stage3
+    std::vector<std::deque<State3rd<BinFunc>>> state3; state3.reserve(state2.size());
+    for(auto& q: state2){
+        std::deque<State3rd<BinFunc>> qq;
+        for (auto& e : q){
+            if (e.isEnd())
+            qq.emplace_back(std::move(e));
+        }
+
+        state3.emplace_back(std::move(qq));
+    }
+
+    writeln(std::cout, "Stage3");
+    parallel_guess_impl(state3);
+
+
+    // もっとも良い結果の選択
+    State3rd<BinFunc> *minState = nullptr;
+    for(auto& q: state3)
+        for(auto& e: q)
+            if(minState == nullptr || e < *minState)
+                minState = &e;
+
+    if(minState == nullptr){
+        std::cout << "empty !!!" << std::endl;
+        return guess::guess(pb, f);
+    }else{
+        auto mat = minState->index();
         std::vector<std::vector<Index2D>> dst;
         for(auto& v: mat)
             dst.emplace_back(v.begin(), v.end());

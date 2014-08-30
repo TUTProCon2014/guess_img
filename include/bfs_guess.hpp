@@ -387,7 +387,7 @@ std::vector<std::vector<Index2D>> bfs_guess(utils::Problem const & pb, BinFunc f
         state1.emplace_back(&pb, &f, std::deque<Index2D>({ convToIndex2D(i, pb.div_x()) }), remdup, 0.0);
     }
 
-    writeln(std::cout, "Stage1");
+    writeln("Stage1");
     bfs_guess_impl(state1, 128);
 
     // stage2
@@ -395,7 +395,7 @@ std::vector<std::vector<Index2D>> bfs_guess(utils::Problem const & pb, BinFunc f
     for(State1st<BinFunc>& e: state1)
         state2.emplace_back(std::move(e));
 
-    writeln(std::cout, "Stage2");
+    writeln("Stage2");
     bfs_guess_impl(state2, 128);
 
     // stage3
@@ -403,7 +403,7 @@ std::vector<std::vector<Index2D>> bfs_guess(utils::Problem const & pb, BinFunc f
     for(State2nd<BinFunc>& e: state2)
         state3.emplace_back(std::move(e));
 
-    writeln(std::cout, "Stage3");
+    writeln("Stage3");
     bfs_guess_impl(state3, 128);
 
     if(state3.empty())
@@ -434,7 +434,7 @@ std::vector<std::vector<Index2D>> bfs_guess_parallel(utils::Problem const & pb, 
         std::size_t cnt = 0;
         for (auto& e : ths){
             e.join();
-            utils::writeln(std::cout, "end: ", ++cnt);
+            utils::writeln("end: ", ++cnt);
         }
     };
 
@@ -450,7 +450,7 @@ std::vector<std::vector<Index2D>> bfs_guess_parallel(utils::Problem const & pb, 
     }
 
 
-    utils::writeln(std::cout, "Stage1");
+    utils::writeln("Stage1");
     parallel_guess_impl(state1);
 
     // stage2
@@ -463,7 +463,7 @@ std::vector<std::vector<Index2D>> bfs_guess_parallel(utils::Problem const & pb, 
         state2.emplace_back(std::move(qq));
     }
 
-    utils::writeln(std::cout, "Stage2");
+    writeln("Stage2");
     parallel_guess_impl(state2);
 
     // stage3
@@ -478,7 +478,7 @@ std::vector<std::vector<Index2D>> bfs_guess_parallel(utils::Problem const & pb, 
         state3.emplace_back(std::move(qq));
     }
 
-    utils::writeln(std::cout, "Stage3");
+    writeln("Stage3");
     parallel_guess_impl(state3);
 
 

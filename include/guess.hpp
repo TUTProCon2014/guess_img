@@ -111,7 +111,7 @@ std::vector<std::vector<Index2D>> guess(utils::Problem const & problem, BinFunc 
 
 
 /**
-ある画像img1に対して、方角directionに画像img2がどの程度相関があるかを返します。
+ある画像img1の方角directionに対して、画像img2がどの程度相関があるかを返します。
 相関があるほど返す値は絶対値が小さくなります。
 また、返す値は必ず正です。
 */

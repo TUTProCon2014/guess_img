@@ -86,7 +86,7 @@ std::vector<std::vector<Index2D>> rena_guess(utils::Problem const & problem, Bin
     [&](std::set<Index2D> & remain, std::deque<Index2D> & dst, bool isVerticalLine,
         std::size_t maxN, std::size_t *pTopN, double *pIncPV)
     {
-        utils::enforce(dst.size() >= 1, "結合素材の画像が存在しません");
+        PROCON_ENFORCE(dst.size() >= 1, "結合素材の画像が存在しません");
 
         double incPV = 0;
         std::size_t topN = 0;       // 先頭に何個追加したか
@@ -130,7 +130,7 @@ std::vector<std::vector<Index2D>> rena_guess(utils::Problem const & problem, Bin
     [&](std::set<Index2D> & remain, std::deque<Index2D> & dst, utils::Direction dir,
         std::size_t maxN, double *pIncPV)
     {
-		utils::enforce(dst.size() > 0, "結合素材の画像がありません");
+        PROCON_ENFORCE(dst.size() > 0, "結合素材の画像がありません");
 
         double incPV = 0;
         while(!remain.empty() && dst.size() < maxN){
@@ -154,7 +154,7 @@ std::vector<std::vector<Index2D>> rena_guess(utils::Problem const & problem, Bin
 
         if(pIncPV)
             *pIncPV += incPV;
-	};
+    };
 
     // (0, 0)の画像に対して、まずは縦方向に結合し、
     // その後、横方向に結合していく
@@ -241,7 +241,7 @@ std::vector<std::vector<Index2D>> rena_guess(utils::Problem const & problem, Bin
 
 template <typename T, typename U
 #ifdef SUPPORT_CONSTRAINTS
-	, PROCON_TEMPLATE_CONSTRAINTS(utils::is_image<T>() && utils::is_image<U>())   // T, Uともに画像であるという制約
+    , PROCON_TEMPLATE_CONSTRAINTS(utils::is_image<T>() && utils::is_image<U>())   // T, Uともに画像であるという制約
 #endif
 >
 double diff_connection_rena(T const & img1, U const & img2, utils::Direction direction)

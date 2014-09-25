@@ -19,9 +19,9 @@ namespace procon { namespace bfs_guess {
 using namespace utils;
 
 
-inline Index2D convToIndex2D(std::size_t i, std::size_t w)
+inline ImageID convToImageID(std::size_t i, std::size_t w)
 {
-    return makeIndex2D(i / w, i % w);
+    return ImageID(i / w, i % w);
 }
 
 
@@ -84,7 +84,7 @@ void bfs_guess_impl(std::deque<State>& state, std::size_t maxSize)
 template <typename BinFunc>
 struct State1st
 {
-    State1st(utils::Problem const *pb, BinFunc *func, std::deque<Index2D> const & idx, std::vector<bool> const & rem, double ev)
+    State1st(utils::Problem const *pb, BinFunc *func, std::deque<ImageID> const & idx, std::vector<bool> const & rem, double ev)
     : _pb(pb), _pred(func), _idx(idx), _remain(rem), _ev(ev) {}
 
 
@@ -94,7 +94,7 @@ struct State1st
     }
 
 
-    std::deque<Index2D> const & index() const
+    std::deque<ImageID> const & index() const
     {
         return _idx;
     }
@@ -131,28 +131,28 @@ struct State1st
 
     Problem const *_pb;
     BinFunc *_pred;
-    std::deque<Index2D> _idx;
+    std::deque<ImageID> _idx;
     std::vector<bool> _remain;
     double _ev;
 
 
-    double pred_value(Direction dir, Index2D const & index)
+    double pred_value(Direction dir, ImageID const & index)
     {
-        Index2D tI;
+        ImageID tI;
         if(dir == Direction::up)
             tI = _idx[0];
         else
             tI = _idx[_idx.size()-1];
 
-        return std::abs((*_pred)(_pb->get_element(tI[0], tI[1]),
-                        _pb->get_element(index[0], index[1]),
+        return std::abs((*_pred)(_pb->get_element(tI),
+                        _pb->get_element(index),
                         dir));
     }
 
 
     void insert(Direction dir, std::size_t i)
     {
-        const Index2D index = convToIndex2D(i, _pb->div_x());
+        const ImageID index = convToImageID(i, _pb->div_x());
 
         _ev += pred_value(dir, index);
 
@@ -212,13 +212,13 @@ struct State2nd
     }
 
 
-    std::deque<Index2D> const & index2nd()
+    std::deque<ImageID> const & index2nd()
     {
         return _idx;
     }
 
 
-    std::deque<Index2D> const & index1st()
+    std::deque<ImageID> const & index1st()
     {
         return _1st.index();
     }
@@ -228,25 +228,25 @@ struct State2nd
 
 
     State1st<BinFunc> _1st;
-    std::deque<Index2D> _idx;
+    std::deque<ImageID> _idx;
     std::size_t _cntLN;
 
 
-    double pred_value(Direction dir, Index2D const & index)
+    double pred_value(Direction dir, ImageID const & index)
     {
         auto tI = _idx[0];
         if(dir == Direction::right)
             tI = _idx[_idx.size() - 1];
 
-        return std::abs((*_1st._pred)(_1st._pb->get_element(tI[0], tI[1]),
-                                      _1st._pb->get_element(index[0], index[1]),
+        return std::abs((*_1st._pred)(_1st._pb->get_element(tI),
+                                      _1st._pb->get_element(index),
                                       dir));
     }
 
 
     void insert(Direction dir, std::size_t i)
     {
-        const Index2D index = convToIndex2D(i, _1st._pb->div_x());
+        const ImageID index = convToImageID(i, _1st._pb->div_x());
 
         _1st._ev += pred_value(dir, index);
 
@@ -300,7 +300,7 @@ struct State3rd
     { return this->value() < rhs.value(); }
 
 
-    std::vector<std::deque<Index2D>> const & index() const { return _idx; }
+    std::vector<std::deque<ImageID>> const & index() const { return _idx; }
 
 
     void update(std::deque<State3rd<BinFunc>>& dst)
@@ -323,16 +323,16 @@ struct State3rd
 
 
     State1st<BinFunc> _1st;
-    std::vector<std::deque<Index2D>> _idx;
+    std::vector<std::deque<ImageID>> _idx;
     std::size_t _cntLN;
     std::size_t _ctIdx;
 
 
     void insert(std::size_t i){
-        const Index2D index = convToIndex2D(i, _1st._pb->div_x());
+        const ImageID index = convToImageID(i, _1st._pb->div_x());
 
         auto pos = nowPos();
-        Index2D tIh, tIv;
+        ImageID tIh, tIv;
 
         Direction dir = Direction::left;
         if(pos[1] > _cntLN){
@@ -348,12 +348,12 @@ struct State3rd
 
         _1st._remain[i] = false;
 
-        _1st._ev += std::abs((*_1st._pred)(_1st._pb->get_element(tIh[0], tIh[1]),
-                                  _1st._pb->get_element(index[0], index[1]),
+        _1st._ev += std::abs((*_1st._pred)(_1st._pb->get_element(tIh),
+                                  _1st._pb->get_element(index),
                                   dir));
 
-        _1st._ev += std::abs((*_1st._pred)(_1st._pb->get_element(tIv[0], tIv[1]),
-                                 _1st._pb->get_element(index[0], index[1]),
+        _1st._ev += std::abs((*_1st._pred)(_1st._pb->get_element(tIv),
+                                 _1st._pb->get_element(index),
                                  Direction::down));
 
         ++_ctIdx;
@@ -375,7 +375,7 @@ struct State3rd
 
 
 template <typename BinFunc>
-std::vector<std::vector<Index2D>> bfs_guess(utils::Problem const & pb, BinFunc f)
+std::vector<std::vector<ImageID>> bfs_guess(utils::Problem const & pb, BinFunc f)
 {
     // stage1
     std::vector<bool> rem(pb.div_y() * pb.div_x(), true);
@@ -384,7 +384,7 @@ std::vector<std::vector<Index2D>> bfs_guess(utils::Problem const & pb, BinFunc f
     for(auto i: utils::iota(rem.size())){
         auto remdup = rem;
         remdup[i] = false;
-        state1.emplace_back(&pb, &f, std::deque<Index2D>({ convToIndex2D(i, pb.div_x()) }), remdup, 0.0);
+        state1.emplace_back(&pb, &f, std::deque<ImageID>({ convToImageID(i, pb.div_x()) }), remdup, 0.0);
     }
 
     writeln("Stage1");
@@ -410,7 +410,7 @@ std::vector<std::vector<Index2D>> bfs_guess(utils::Problem const & pb, BinFunc f
         return guess::guess(pb, f);
     else{
         auto mat = state3[0].index();
-        std::vector<std::vector<Index2D>> dst;
+        std::vector<std::vector<ImageID>> dst;
         for(auto& v: mat)
             dst.emplace_back(v.begin(), v.end());
 
@@ -420,7 +420,7 @@ std::vector<std::vector<Index2D>> bfs_guess(utils::Problem const & pb, BinFunc f
 
 
 template <typename BinFunc>
-std::vector<std::vector<Index2D>> bfs_guess_parallel(utils::Problem const & pb, BinFunc f)
+std::vector<std::vector<ImageID>> bfs_guess_parallel(utils::Problem const & pb, BinFunc f)
 {
     const std::size_t allTileN = pb.div_y() * pb.div_x();
     const std::size_t threadN = static_cast<std::size_t>(std::floor(allTileN / (allTileN >= 64 ? std::sqrt(pb.div_y()) : 1) / (allTileN >= 144 ? std::sqrt(pb.div_y()) : 1)));
@@ -446,7 +446,7 @@ std::vector<std::vector<Index2D>> bfs_guess_parallel(utils::Problem const & pb, 
     for(auto i: utils::iota(state1.size())){
         auto remdup = rem;
         remdup[i] = false;
-        state1[i].emplace_back(&pb, &f, std::deque<Index2D>({ convToIndex2D(i, pb.div_x()) }), remdup, 0.0);
+        state1[i].emplace_back(&pb, &f, std::deque<ImageID>({ convToImageID(i, pb.div_x()) }), remdup, 0.0);
     }
 
 
@@ -494,7 +494,7 @@ std::vector<std::vector<Index2D>> bfs_guess_parallel(utils::Problem const & pb, 
         return guess::guess(pb, f);
     }else{
         auto mat = minState->index();
-        std::vector<std::vector<Index2D>> dst;
+        std::vector<std::vector<ImageID>> dst;
         for(auto& v: mat)
             dst.emplace_back(v.begin(), v.end());
 

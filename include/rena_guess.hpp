@@ -15,7 +15,7 @@
 #include "../../utils/include/exception.hpp"
 
 #include <vector>
-#include <set>
+#include <unordered_set>
 #include <array>
 #include <deque>
 
@@ -42,27 +42,27 @@ auto idxRC = guess(problem, [](utils::ElementImage const & p1,
 ------------
 */
 template <typename BinFunc>
-std::vector<std::vector<Index2D>> rena_guess(utils::Problem const & problem, BinFunc f)
+std::vector<std::vector<ImageID>> rena_guess(utils::Problem const & problem, BinFunc f)
 {
     auto remain = [&](){
-        std::set<Index2D> dst;
+        std::unordered_set<ImageID> dst;
         for(auto r : utils::iota(problem.div_y()))
             for(auto c : utils::iota(problem.div_x())){
-                dst.insert(makeIndex2D(r, c));
+                dst.insert(ImageID(r, c));
             }
         return dst;
     }();
 
 
     /// 画像originのdir方向に最適な画像を選び出す
-    auto choose_best_one = [&](std::set<Index2D> const & remain, Index2D origin, utils::Direction dir, double *pPV)
+    auto choose_best_one = [&](std::unordered_set<ImageID> const & remain, ImageID origin, utils::Direction dir, double *pPV)
     {
-        Index2D mIdx;
+        ImageID mIdx;
         double min = std::numeric_limits<double>::infinity();
 
         for(auto const & idx: remain){
-            const double v = std::abs(f(problem.get_element(origin[0], origin[1]),
-                                        problem.get_element(idx[0], idx[1]),
+            const double v = std::abs(f(problem.get_element(origin),
+                                        problem.get_element(idx),
                                         dir));
 
             if(min >= v){   // min == v == infのときは入れ替える
@@ -83,7 +83,7 @@ std::vector<std::vector<Index2D>> rena_guess(utils::Problem const & problem, Bin
     // pTopN :  先頭に何個追加したかが格納される。
     // pIncPV : 評価関数の増加値が格納される
     auto guess_bidirectional =
-    [&](std::set<Index2D> & remain, std::deque<Index2D> & dst, bool isVerticalLine,
+    [&](std::unordered_set<ImageID> & remain, std::deque<ImageID> & dst, bool isVerticalLine,
         std::size_t maxN, std::size_t *pTopN, double *pIncPV)
     {
         PROCON_ENFORCE(dst.size() >= 1, "結合素材の画像が存在しません");
@@ -94,12 +94,12 @@ std::vector<std::vector<Index2D>> rena_guess(utils::Problem const & problem, Bin
         while(!remain.empty() && dst.size() < maxN){
             auto dir = isVerticalLine ? utils::Direction::up : utils::Direction::left;
             double predValue;
-            Index2D mIdx = choose_best_one(remain, dst[0], dir, &predValue);
+            ImageID mIdx = choose_best_one(remain, dst[0], dir, &predValue);
 
             {
                 const auto dir2 = isVerticalLine ? utils::Direction::down : utils::Direction::right;
                 double predV2;
-                Index2D mIdx2 = choose_best_one(remain, dst[dst.size()-1], dir2, &predV2);
+                ImageID mIdx2 = choose_best_one(remain, dst[dst.size()-1], dir2, &predV2);
 
                 if(predV2 < predValue){
                     dir = dir2;
@@ -127,14 +127,14 @@ std::vector<std::vector<Index2D>> rena_guess(utils::Problem const & problem, Bin
 
     // 画像リストdstを元にして、単方向に連結していき、最終的に、maxN個の画像のリストになるまで連結を進めます。
     auto guess_singlyLink =
-    [&](std::set<Index2D> & remain, std::deque<Index2D> & dst, utils::Direction dir,
+    [&](std::unordered_set<ImageID> & remain, std::deque<ImageID> & dst, utils::Direction dir,
         std::size_t maxN, double *pIncPV)
     {
         PROCON_ENFORCE(dst.size() > 0, "結合素材の画像がありません");
 
         double incPV = 0;
         while(!remain.empty() && dst.size() < maxN){
-            Index2D idx;
+            ImageID idx;
 
             if(dir == utils::Direction::up || dir == utils::Direction::left)
                 idx = dst[0];
@@ -172,9 +172,9 @@ std::vector<std::vector<Index2D>> rena_guess(utils::Problem const & problem, Bin
 
     //垂直の結合で一番評価関数の合計値が最小になるものを探す
     for(auto i: utils::iota(problem.div_y())){
-        auto org = makeIndex2D(i, 0);
+        auto org = ImageID(i, 0);
         remain.erase(org);
-        std::deque<Index2D> list = { org };
+        std::deque<ImageID> list = { org };
 
         double v;
         guess_bidirectional(remain, list, true, problem.div_y(), nullptr, &v);
@@ -190,14 +190,14 @@ std::vector<std::vector<Index2D>> rena_guess(utils::Problem const & problem, Bin
     }
 
     //最小の評価関数になる断片たちを垂直結合
-    std::deque<Index2D> vert = { makeIndex2D(m_ind, 0) };
+    std::deque<ImageID> vert = { ImageID(m_ind, 0) };
     guess_bidirectional(remain, vert, true, problem.div_y(), nullptr, nullptr);
 
     min = std::numeric_limits<double>::infinity();
     std::size_t limLN = 0;
     //水平の結合で一番評価関数の合計値が最小になるものの左連結数と右連結数を計算
     for(auto& o : vert){
-        std::deque<Index2D> list = { o };
+        std::deque<ImageID> list = { o };
         double v = 0;
         std::size_t leftN = 0;
         guess_bidirectional(remain, list, false, problem.div_x(), &leftN, &v);
@@ -211,10 +211,10 @@ std::vector<std::vector<Index2D>> rena_guess(utils::Problem const & problem, Bin
                 remain.insert(std::move(e));
     }
 
-    std::vector<std::vector<Index2D>> dst;
+    std::vector<std::vector<ImageID>> dst;
     //求めた左連結数と右連結数で結合
     for(auto& o : vert){
-        std::deque<Index2D> hlist = { o };
+        std::deque<ImageID> hlist = { o };
         guess_singlyLink(remain, hlist, utils::Direction::left, limLN+1, nullptr);
         guess_singlyLink(remain, hlist, utils::Direction::right, problem.div_x(), nullptr);
 

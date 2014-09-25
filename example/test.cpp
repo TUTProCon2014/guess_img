@@ -6,17 +6,17 @@
 #include "../../utils/include/types.hpp"
 #include "../../utils/include/dwrite.hpp"
 
-#define GUESS_FUNC bfs_guess::bfs_guess_parallel
+#define GUESS_FUNC bfs_guess::bfs_guess
 #define GUESS_PRED bfs_guess::diff_connection
 
 using namespace procon;
 
 int main()
 {
-    auto p_opt = utils::Problem::get("img5.ppm");
+    auto p_opt = utils::Problem::get("img1.ppm");
 
     if(!p_opt)
-        p_opt = inout::get_problem_from_test_server(5);
+        p_opt = inout::get_problem_from_test_server(1);
 
     if(p_opt){
         const utils::Problem& p = *p_opt;
@@ -34,8 +34,10 @@ int main()
 
         // 復元できたインデックスを表示してみる
         for(auto& ee: idxs){
-            for(auto& e : ee)
-                std::cout << "(" << e[0] << ", " << e[1] << "), ";
+            for (auto& e : ee){
+                auto i2 = e.get_index();
+                std::cout << "(" << i2[0] << ", " <<i2[1] << "), ";
+            }
             std::cout << std::endl;
         }
 
@@ -47,7 +49,7 @@ int main()
             for(auto ee: idxs){
                 size_t c = 0;
                 for(auto e: ee){
-                    p.get_element(e[0], e[1]).cvMat().copyTo(dst.get_element(r, c).cvMat());
+                    p.get_element(e).cvMat().copyTo(dst.get_element(r, c).cvMat());
                     ++c;
                 }
                 ++r;

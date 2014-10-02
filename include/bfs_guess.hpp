@@ -5,6 +5,7 @@
 #include "../../utils/include/types.hpp"
 #include "../../utils/include/range.hpp"
 #include "../../utils/include/dwrite.hpp"
+#include "guess.hpp"
 
 #include <vector>
 #include <set>

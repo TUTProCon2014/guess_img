@@ -70,7 +70,6 @@ modify::Group createGroup(Problem const & pb, BinFunc f, ImageID origin, unsigne
 
     modify::Group group;
     for(auto& e: list){
-        auto idx = e.get_index();
         group.emplace_back(e, std::array<std::ptrdiff_t, 2>(
                                 {static_cast<std::ptrdiff_t>(group.size()), 0}));
     }

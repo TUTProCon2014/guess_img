@@ -50,7 +50,7 @@ struct Correlator
                     }
                 }
 
-                this->_memo.emplace(ImageID(i, j), std::move(pxsMap));
+                this->_memo.emplace(utils::ImageID(i, j), std::move(pxsMap));
             }
     }
 

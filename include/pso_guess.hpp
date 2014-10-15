@@ -37,7 +37,7 @@ class Particle{
         std::vector<double> _pbest;                     //personal best
         double _pvalue;                                 //個人の最高評価値
         int _dim;                                       //問題の次元
-        BinFunc _f;                                     //評価関数
+        BinFunc const *_f;                              //評価関数
         const Problem _problem;                         //問題情報
         std::mt19937 _rnd;                              //擬似乱数生成器
         std::uniform_real_distribution<double> _dist;   //一様分布生成器
@@ -151,8 +151,8 @@ class Particle{
                         size_t sy = j + dy[k];
                         if(sx >= 0 && sx < _problem.div_x() && sy >= 0 && sy < _problem.div_y()){
                             
-                            double v = std::abs(_f(_problem.get_element(idxs[j][i]),
-                                                   _problem.get_element(idxs[sy][sx]),
+                            double v = std::abs((*_f)(idxs[j][i],
+                                                   idxs[sy][sx],
                                                   (utils::Direction)k));
                             val += v;
                         }
@@ -203,7 +203,7 @@ class Particle{
 };
 
 template <typename BinFunc>
-std::vector<std::vector<ImageID>> pso_guess(utils::Problem const & problem, BinFunc f){
+std::vector<std::vector<ImageID>> pso_guess(utils::Problem const & problem, BinFunc const & f){
     const int p_num = 30;       //粒子数
     const int tmax = 300;       //イテレーション回数
     double w = 0.9;             //慣性項

@@ -3,12 +3,12 @@
 #include "../include/rena_guess.hpp"
 #include "../include/bfs_guess.hpp"
 #include "../include/blocked_guess.hpp"
+#include "../include/correlation.hpp"
 #include "../../inout/include/inout.hpp"
 #include "../../utils/include/types.hpp"
 #include "../../utils/include/dwrite.hpp"
 
 #define GUESS_FUNC blocked_guess::guess
-#define GUESS_PRED bfs_guess::diff_connection
 
 using namespace procon;
 
@@ -23,12 +23,7 @@ int main()
         const utils::Problem& p = *p_opt;
 
         // 復元に使うための、2つの画像のくっつき度合いを返す関数
-        auto pred = [&](utils::Image const & img1,
-                        utils::Image const & img2,
-                        utils::Direction dir)
-        {
-            return GUESS_PRED(img1, img2, dir);
-        };
+        auto pred = guess::Correlator(p);
 
         // 復元
         auto idxs = GUESS_FUNC(p, pred);

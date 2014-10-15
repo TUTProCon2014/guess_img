@@ -4,6 +4,8 @@
 #include <vector>
 #include <unordered_set>
 #include <cmath>
+#include <thread>
+#include <future>
 
 #include "../../utils/include/image.hpp"
 #include "../../modify_guess_image/common.hpp"
@@ -25,7 +27,7 @@ int getLogExp2(int n)
 
 
 template <typename BinFunc>
-modify::Group createGroup(Problem const & pb, BinFunc f, ImageID origin, unsigned int n,
+modify::Group createGroup(Problem const & pb, BinFunc const & f, ImageID origin, unsigned int n,
                                         std::unordered_set<ImageID>& remain)
 {
     if(n > pb.div_y())
@@ -47,8 +49,8 @@ modify::Group createGroup(Problem const & pb, BinFunc f, ImageID origin, unsigne
                 tgtIdx = list.size() - 1;
 
             for(auto& id: remain){
-                const double v = std::abs(f(pb.get_element(list[tgtIdx]),
-                                            pb.get_element(id),
+                const double v = std::abs(f(list[tgtIdx],
+                                            id,
                                             d));
                 if(min >= v){
                     min = v;
@@ -87,7 +89,7 @@ modify::Group createGroup(Problem const & pb, BinFunc f, ImageID origin, unsigne
 
 
 template <typename BinFunc>
-std::vector<std::vector<ImageID>> guess(Problem const & pb, BinFunc f)
+std::vector<std::vector<ImageID>> guess(Problem const & pb, BinFunc const & f)
 {
     std::unordered_set<ImageID> remain;
     DividedImage::foreach(pb, [&](size_t i, size_t j){
@@ -98,13 +100,25 @@ std::vector<std::vector<ImageID>> guess(Problem const & pb, BinFunc f)
     modify::OptionalMap omp(pb.div_y(), std::vector<boost::optional<ImageID>>(pb.div_x()));
 
 
+    std::vector<std::future<std::tuple<double, modify::ImgMap>>> ths;
+    for(auto i: utils::iota(pb.div_x() / getLogExp2(pb.div_x()))){
+        ths.emplace_back(std::async(
+            std::launch::async,
+            [&](size_t i){
+                std::unordered_set<ImageID> rm = remain;
+                auto gp = createGroup(pb, f, ImageID(0, i), getLogExp2(pb.div_x()) * 2, rm);
+                return modify::position_bfs(&gp, &gp + 1, omp, rm, pb, f);
+            },
+            i));
+    }
+
+
     std::tuple<double, modify::ImgMap> min;
     std::get<0>(min) = std::numeric_limits<double>::infinity();
 
-    for(auto i: utils::iota(pb.div_x() / getLogExp2(pb.div_x()))){
-        std::unordered_set<ImageID> rm = remain;
-        auto gp = createGroup(pb, f, ImageID(0, i), getLogExp2(pb.div_x()) * 2, rm);
-        auto res = modify::position_bfs(&gp, &gp + 1, omp, rm, pb, f);
+    for(auto& e: ths){
+        e.wait();
+        auto res = e.get();
 
         if(std::get<0>(min) >= std::get<0>(res))
             min = res;

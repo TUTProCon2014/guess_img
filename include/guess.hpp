@@ -34,7 +34,7 @@ auto idxRC = guess(problem, [](Image const & p1,
 ------------
 */
 template <typename BinFunc>
-std::vector<std::vector<ImageID>> guess(Problem const & problem, BinFunc f)
+std::vector<std::vector<ImageID>> guess(Problem const & problem, BinFunc const & f)
 {
     auto remain = [&](){
         std::unordered_set<ImageID> dst;
@@ -69,8 +69,8 @@ std::vector<std::vector<ImageID>> guess(Problem const & problem, BinFunc f)
                     tgtIdx = dst.size() - 1;
 
                 for(auto& idx : remain){    // 残っている画像の中から探す
-                    const double v = std::abs(f(problem.get_element(dst[tgtIdx]),
-                                                problem.get_element(idx),
+                    const double v = std::abs(f(dst[tgtIdx],
+                                                idx,
                                                 d));
                     if(min >= v){   // min == v == infのときは入れ替える
                         min = v;

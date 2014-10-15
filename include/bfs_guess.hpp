@@ -85,7 +85,7 @@ void bfs_guess_impl(std::deque<State>& state, std::size_t maxSize)
 template <typename BinFunc>
 struct State1st
 {
-    State1st(utils::Problem const *pb, BinFunc *func, std::deque<ImageID> const & idx, std::vector<bool> const & rem, double ev)
+    State1st(utils::Problem const *pb, BinFunc const *func, std::deque<ImageID> const & idx, std::vector<bool> const & rem, double ev)
     : _pb(pb), _pred(func), _idx(idx), _remain(rem), _ev(ev) {}
 
 
@@ -131,7 +131,7 @@ struct State1st
 
 
     Problem const *_pb;
-    BinFunc *_pred;
+    BinFunc const *_pred;
     std::deque<ImageID> _idx;
     std::vector<bool> _remain;
     double _ev;
@@ -145,8 +145,8 @@ struct State1st
         else
             tI = _idx[_idx.size()-1];
 
-        return std::abs((*_pred)(_pb->get_element(tI),
-                        _pb->get_element(index),
+        return std::abs((*_pred)(tI,
+                        index,
                         dir));
     }
 
@@ -239,8 +239,8 @@ struct State2nd
         if(dir == Direction::right)
             tI = _idx[_idx.size() - 1];
 
-        return std::abs((*_1st._pred)(_1st._pb->get_element(tI),
-                                      _1st._pb->get_element(index),
+        return std::abs((*_1st._pred)(tI,
+                                      index,
                                       dir));
     }
 
@@ -349,12 +349,12 @@ struct State3rd
 
         _1st._remain[i] = false;
 
-        _1st._ev += std::abs((*_1st._pred)(_1st._pb->get_element(tIh),
-                                  _1st._pb->get_element(index),
+        _1st._ev += std::abs((*_1st._pred)(tIh,
+                                  index,
                                   dir));
 
-        _1st._ev += std::abs((*_1st._pred)(_1st._pb->get_element(tIv),
-                                 _1st._pb->get_element(index),
+        _1st._ev += std::abs((*_1st._pred)(tIv,
+                                 index,
                                  Direction::down));
 
         ++_ctIdx;
@@ -376,7 +376,7 @@ struct State3rd
 
 
 template <typename BinFunc>
-std::vector<std::vector<ImageID>> bfs_guess(utils::Problem const & pb, BinFunc f)
+std::vector<std::vector<ImageID>> bfs_guess(utils::Problem const & pb, BinFunc const & f)
 {
     // stage1
     std::vector<bool> rem(pb.div_y() * pb.div_x(), true);
@@ -421,7 +421,7 @@ std::vector<std::vector<ImageID>> bfs_guess(utils::Problem const & pb, BinFunc f
 
 
 template <typename BinFunc>
-std::vector<std::vector<ImageID>> bfs_guess_parallel(utils::Problem const & pb, BinFunc f)
+std::vector<std::vector<ImageID>> bfs_guess_parallel(utils::Problem const & pb, BinFunc const & f)
 {
     const std::size_t allTileN = pb.div_y() * pb.div_x();
     const std::size_t threadN = static_cast<std::size_t>(std::floor(allTileN / (allTileN >= 64 ? std::sqrt(pb.div_y()) : 1) / (allTileN >= 144 ? std::sqrt(pb.div_y()) : 1)));

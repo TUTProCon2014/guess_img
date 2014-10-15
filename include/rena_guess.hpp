@@ -42,7 +42,7 @@ auto idxRC = guess(problem, [](utils::ElementImage const & p1,
 ------------
 */
 template <typename BinFunc>
-std::vector<std::vector<ImageID>> rena_guess(utils::Problem const & problem, BinFunc f)
+std::vector<std::vector<ImageID>> rena_guess(utils::Problem const & problem, BinFunc const & f)
 {
     auto remain = [&](){
         std::unordered_set<ImageID> dst;
@@ -61,8 +61,8 @@ std::vector<std::vector<ImageID>> rena_guess(utils::Problem const & problem, Bin
         double min = std::numeric_limits<double>::infinity();
 
         for(auto const & idx: remain){
-            const double v = std::abs(f(problem.get_element(origin),
-                                        problem.get_element(idx),
+            const double v = std::abs(f(origin,
+                                        idx,
                                         dir));
 
             if(min >= v){   // min == v == infのときは入れ替える

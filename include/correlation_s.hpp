@@ -9,7 +9,7 @@
 #include "../../utils/include/constants.hpp"
 
 
-namespace procon { namespace guess {
+namespace procon { namespace guess_s {
 
 class Ajust
 {

@@ -6,6 +6,7 @@
 #include <cmath>
 #include <thread>
 #include <future>
+#include <boost/optional.hpp>
 
 #include "../../utils/include/image.hpp"
 #include "../../modify_guess_image/common.hpp"
@@ -27,9 +28,42 @@ int getLogExp2(int n)
 
 
 template <typename BinFunc>
-modify::Group createGroup(Problem const & pb, BinFunc const & f, ImageID origin, unsigned int n,
+modify::Group createGroup(Problem const & pb, BinFunc const & f, ImageID origin,
+                                        unsigned int w, unsigned int h,
                                         std::unordered_set<ImageID>& remain)
 {
+    modify::OptionalMap omp(h, std::vector<boost::optional<ImageID>>(w));
+
+    double minV = std::numeric_limits<double>::infinity();
+    modify::ImgMap minMap;
+
+    remain.erase(origin);
+
+    for(size_t i = 0; i < h; ++i)
+        for(size_t j = 0; j < w; ++j){
+            omp[i][j] = origin;
+            auto imgMap = modify::fill_remain_tile(omp, remain, f);
+            omp[i][j] = boost::none;
+
+            const auto v = modify::calcAllValue(imgMap, f);
+            if(v <= minV){
+                minMap = imgMap;
+                minV = v;
+            }
+        }
+
+    modify::Group gp;
+    for(size_t i = 0; i < h; ++i)
+        for(size_t j = 0; j < w; ++j){
+            remain.erase(minMap[i][j]);
+            gp.emplace_back(minMap[i][j], std::array<std::ptrdiff_t, 2>(
+                                {static_cast<std::ptrdiff_t>(i),
+                                 static_cast<std::ptrdiff_t>(j)}));
+        }
+
+    return gp;
+
+    /*
     if(n > pb.div_y())
         n = pb.div_y();
 
@@ -85,6 +119,7 @@ modify::Group createGroup(Problem const & pb, BinFunc const & f, ImageID origin,
     }
 
     return group;
+    */
 }
 
 
@@ -106,7 +141,7 @@ std::vector<std::vector<ImageID>> guess(Problem const & pb, BinFunc const & f)
             std::launch::async,
             [&](size_t i){
                 std::unordered_set<ImageID> rm = remain;
-                auto gp = createGroup(pb, f, ImageID(0, i), getLogExp2(pb.div_x()) * 2, rm);
+                auto gp = createGroup(pb, f, ImageID(0, i), getLogExp2(pb.div_x()), getLogExp2(pb.div_y()), rm);
                 return modify::position_bfs(&gp, &gp + 1, omp, rm, pb, f);
             },
             i));
